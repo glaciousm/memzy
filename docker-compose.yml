@@ -1,0 +1,81 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: memzy-postgres
+    environment:
+      POSTGRES_DB: memzy_db
+      POSTGRES_USER: memzy_user
+      POSTGRES_PASSWORD: memzy_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - memzy-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U memzy_user -d memzy_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: memzy-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - memzy-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend service (uncomment when ready to dockerize)
+  # backend:
+  #   build:
+  #     context: ./memzy-backend
+  #     dockerfile: Dockerfile
+  #   container_name: memzy-backend
+  #   ports:
+  #     - "8080:8080"
+  #   environment:
+  #     SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/memzy_db
+  #     SPRING_DATASOURCE_USERNAME: memzy_user
+  #     SPRING_DATASOURCE_PASSWORD: memzy_password
+  #     SPRING_REDIS_HOST: redis
+  #     SPRING_REDIS_PORT: 6379
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
+  #   networks:
+  #     - memzy-network
+  #   volumes:
+  #     - ./storage:/app/storage
+
+  # Frontend service (uncomment when ready to dockerize)
+  # frontend:
+  #   build:
+  #     context: ./memzy-frontend
+  #     dockerfile: Dockerfile
+  #   container_name: memzy-frontend
+  #   ports:
+  #     - "80:80"
+  #   depends_on:
+  #     - backend
+  #   networks:
+  #     - memzy-network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  memzy-network:
+    driver: bridge

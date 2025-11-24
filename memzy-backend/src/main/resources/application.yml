@@ -1,0 +1,70 @@
+spring:
+  application:
+    name: memzy-backend
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/memzy_db
+    username: memzy_user
+    password: memzy_password
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 500MB
+      max-request-size: 500MB
+
+  redis:
+    host: localhost
+    port: 6379
+    password:
+    timeout: 60000
+
+# Application specific configuration
+memzy:
+  jwt:
+    secret: ${JWT_SECRET:your-secret-key-change-this-in-production-min-256-bits}
+    expiration: 86400000  # 24 hours in milliseconds
+    refresh-expiration: 604800000  # 7 days
+
+  storage:
+    thumbnail-path: ${THUMBNAIL_PATH:./storage/thumbnails}
+    temp-path: ${TEMP_PATH:./storage/temp}
+
+  media:
+    supported-image-formats: jpg,jpeg,png,gif,webp,bmp,tiff
+    supported-video-formats: mp4,avi,mov,mkv,webm,flv,wmv
+    thumbnail-sizes: 150,300,600,1200
+
+  cloud:
+    google-drive:
+      enabled: false
+      client-id: ${GOOGLE_CLIENT_ID:}
+      client-secret: ${GOOGLE_CLIENT_SECRET:}
+    dropbox:
+      enabled: false
+      access-token: ${DROPBOX_ACCESS_TOKEN:}
+    onedrive:
+      enabled: false
+      client-id: ${ONEDRIVE_CLIENT_ID:}
+      client-secret: ${ONEDRIVE_CLIENT_SECRET:}
+
+server:
+  port: 8080
+  error:
+    include-message: always
+    include-stacktrace: on_param
+
+logging:
+  level:
+    com.memzy: DEBUG
+    org.springframework.security: DEBUG
