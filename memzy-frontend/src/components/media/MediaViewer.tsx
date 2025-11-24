@@ -7,6 +7,8 @@ import {
   Typography,
   Chip,
   Divider,
+  Tabs,
+  Tab,
 } from '@mui/material';
 import {
   Close,
@@ -15,11 +17,14 @@ import {
   Favorite,
   FavoriteBorder,
   Download,
+  Info,
+  Comment as CommentIcon,
 } from '@mui/icons-material';
 import ReactPlayer from 'react-player';
 import { MediaFile, MediaType, Tag } from '@/types';
 import mediaService from '@/services/mediaService';
 import TagPicker from '@/components/tags/TagPicker';
+import CommentSection from '@/components/comments/CommentSection';
 import { format } from 'date-fns';
 
 interface MediaViewerProps {
@@ -44,10 +49,12 @@ const MediaViewer: React.FC<MediaViewerProps> = ({
   hasNext = false,
 }) => {
   const [currentTags, setCurrentTags] = useState<Tag[]>([]);
+  const [tabValue, setTabValue] = useState(0);
 
   useEffect(() => {
     if (media) {
       setCurrentTags(media.tags);
+      setTabValue(0);
     }
   }, [media]);
 
@@ -180,16 +187,6 @@ const MediaViewer: React.FC<MediaViewerProps> = ({
                     ? format(new Date(media.dateTaken), 'MMMM d, yyyy h:mm a')
                     : format(new Date(media.createdAt), 'MMMM d, yyyy h:mm a')}
                 </Typography>
-                {media.width && media.height && (
-                  <Typography variant="caption" color="grey.500">
-                    {media.width} × {media.height}
-                  </Typography>
-                )}
-                {media.cameraMake && media.cameraModel && (
-                  <Typography variant="caption" color="grey.500" sx={{ display: 'block' }}>
-                    {media.cameraMake} {media.cameraModel}
-                  </Typography>
-                )}
               </Box>
 
               <Box>
@@ -206,16 +203,58 @@ const MediaViewer: React.FC<MediaViewerProps> = ({
             </Box>
 
             <Divider sx={{ my: 2, bgcolor: 'rgba(255, 255, 255, 0.1)' }} />
-            <Box>
-              <Typography variant="subtitle2" gutterBottom sx={{ color: 'grey.400' }}>
-                Tags
-              </Typography>
-              <TagPicker
-                mediaId={media.id}
-                selectedTags={currentTags}
-                onTagsChange={setCurrentTags}
-              />
-            </Box>
+
+            <Tabs
+              value={tabValue}
+              onChange={(_, newValue) => setTabValue(newValue)}
+              sx={{
+                borderBottom: 1,
+                borderColor: 'rgba(255, 255, 255, 0.1)',
+                mb: 2,
+                '& .MuiTab-root': { color: 'grey.400' },
+                '& .Mui-selected': { color: 'white' },
+              }}
+            >
+              <Tab icon={<Info />} label="Info" iconPosition="start" />
+              <Tab icon={<CommentIcon />} label="Comments" iconPosition="start" />
+            </Tabs>
+
+            {tabValue === 0 && (
+              <Box>
+                {media.width && media.height && (
+                  <Typography variant="body2" color="grey.400" sx={{ mb: 1 }}>
+                    <strong>Dimensions:</strong> {media.width} × {media.height}
+                  </Typography>
+                )}
+                {media.cameraMake && media.cameraModel && (
+                  <Typography variant="body2" color="grey.400" sx={{ mb: 1 }}>
+                    <strong>Camera:</strong> {media.cameraMake} {media.cameraModel}
+                  </Typography>
+                )}
+                {media.latitude && media.longitude && (
+                  <Typography variant="body2" color="grey.400" sx={{ mb: 2 }}>
+                    <strong>Location:</strong> {media.latitude.toFixed(6)}, {media.longitude.toFixed(6)}
+                  </Typography>
+                )}
+
+                <Divider sx={{ my: 2, bgcolor: 'rgba(255, 255, 255, 0.1)' }} />
+
+                <Typography variant="subtitle2" gutterBottom sx={{ color: 'grey.400' }}>
+                  Tags
+                </Typography>
+                <TagPicker
+                  mediaId={media.id}
+                  selectedTags={currentTags}
+                  onTagsChange={setCurrentTags}
+                />
+              </Box>
+            )}
+
+            {tabValue === 1 && (
+              <Box sx={{ maxHeight: '400px', overflowY: 'auto' }}>
+                <CommentSection mediaFileId={media.id} />
+              </Box>
+            )}
           </Box>
         </DialogContent>
       </Box>

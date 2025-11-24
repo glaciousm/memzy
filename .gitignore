@@ -53,6 +53,10 @@ thumbnails/
 # Documentation builds
 /docs/_build/
 
+# Internal documentation
+CLAUDE.md
+**/CLAUDE.md
+
 # Docker volumes (if used for development)
 docker-volumes/
 

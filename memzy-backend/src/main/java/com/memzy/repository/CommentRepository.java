@@ -12,5 +12,7 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
 
     List<Comment> findByMediaFileOrderByCreatedAtDesc(MediaFile mediaFile);
 
+    List<Comment> findByMediaFileIdOrderByCreatedAtDesc(Long mediaFileId);
+
     Long countByMediaFile(MediaFile mediaFile);
 }
