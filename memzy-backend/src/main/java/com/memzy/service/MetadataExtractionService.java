@@ -11,12 +11,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.InputStreamReader;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 public class MetadataExtractionService {
@@ -89,8 +93,85 @@ public class MetadataExtractionService {
     public Map<String, Object> extractVideoMetadata(File file) {
         Map<String, Object> metadata = new HashMap<>();
 
-        // TODO: Implement video metadata extraction with FFmpeg or similar
-        logger.warn("Video metadata extraction not yet implemented for: {}", file.getName());
+        try {
+            // Use ffprobe to extract video metadata
+            ProcessBuilder processBuilder = new ProcessBuilder(
+                    "ffprobe",
+                    "-v", "quiet",
+                    "-print_format", "json",
+                    "-show_format",
+                    "-show_streams",
+                    file.getAbsolutePath()
+            );
+
+            processBuilder.redirectErrorStream(true);
+            Process process = processBuilder.start();
+
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            StringBuilder output = new StringBuilder();
+            String line;
+
+            while ((line = reader.readLine()) != null) {
+                output.append(line);
+            }
+
+            int exitCode = process.waitFor();
+            if (exitCode == 0) {
+                String jsonOutput = output.toString();
+
+                // Parse duration (in seconds)
+                Pattern durationPattern = Pattern.compile("\"duration\"\\s*:\\s*\"([0-9.]+)\"");
+                Matcher durationMatcher = durationPattern.matcher(jsonOutput);
+                if (durationMatcher.find()) {
+                    try {
+                        double durationSeconds = Double.parseDouble(durationMatcher.group(1));
+                        metadata.put("duration", (int) durationSeconds);
+                    } catch (NumberFormatException e) {
+                        logger.warn("Failed to parse duration for: {}", file.getName());
+                    }
+                }
+
+                // Parse video dimensions
+                Pattern widthPattern = Pattern.compile("\"width\"\\s*:\\s*([0-9]+)");
+                Pattern heightPattern = Pattern.compile("\"height\"\\s*:\\s*([0-9]+)");
+
+                Matcher widthMatcher = widthPattern.matcher(jsonOutput);
+                Matcher heightMatcher = heightPattern.matcher(jsonOutput);
+
+                if (widthMatcher.find()) {
+                    metadata.put("width", Integer.parseInt(widthMatcher.group(1)));
+                }
+                if (heightMatcher.find()) {
+                    metadata.put("height", Integer.parseInt(heightMatcher.group(1)));
+                }
+
+                // Parse codec information
+                Pattern codecPattern = Pattern.compile("\"codec_name\"\\s*:\\s*\"([^\"]+)\"");
+                Matcher codecMatcher = codecPattern.matcher(jsonOutput);
+                if (codecMatcher.find()) {
+                    metadata.put("codecName", codecMatcher.group(1));
+                }
+
+                // Parse bitrate
+                Pattern bitratePattern = Pattern.compile("\"bit_rate\"\\s*:\\s*\"([0-9]+)\"");
+                Matcher bitrateMatcher = bitratePattern.matcher(jsonOutput);
+                if (bitrateMatcher.find()) {
+                    try {
+                        long bitrate = Long.parseLong(bitrateMatcher.group(1));
+                        metadata.put("bitrate", bitrate / 1000); // Convert to kbps
+                    } catch (NumberFormatException e) {
+                        logger.warn("Failed to parse bitrate for: {}", file.getName());
+                    }
+                }
+
+                logger.debug("Extracted video metadata from: {}", file.getName());
+            } else {
+                logger.error("FFprobe failed with exit code: {} for file: {}", exitCode, file.getName());
+            }
+
+        } catch (Exception e) {
+            logger.error("Failed to extract video metadata from: {}", file.getName(), e);
+        }
 
         return metadata;
     }

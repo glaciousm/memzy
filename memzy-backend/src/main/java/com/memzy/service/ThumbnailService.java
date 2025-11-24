@@ -52,15 +52,54 @@ public class ThumbnailService {
     }
 
     public String generateVideoThumbnail(File videoFile, String fileHash) throws IOException {
-        // For now, return a placeholder path
-        // TODO: Implement FFmpeg integration for video thumbnail extraction
-        String thumbnailFileName = fileHash + "_video_thumb.jpg";
-        Path thumbnailPath = Paths.get(thumbnailBasePath, "300", thumbnailFileName);
+        Map<Integer, String> thumbnailPaths = new HashMap<>();
 
-        // Placeholder implementation - will be replaced with FFmpeg
-        logger.warn("Video thumbnail generation not yet implemented for: {}", videoFile.getName());
+        for (Integer size : thumbnailSizes) {
+            try {
+                String thumbnailFileName = fileHash + "_" + size + ".jpg";
+                Path thumbnailDir = Paths.get(thumbnailBasePath, String.valueOf(size));
+                Path thumbnailPath = thumbnailDir.resolve(thumbnailFileName);
 
-        return thumbnailPath.toString();
+                // Create thumbnail directory if it doesn't exist
+                thumbnailDir.toFile().mkdirs();
+
+                // Use FFmpeg to extract frame at 1 second
+                ProcessBuilder processBuilder = new ProcessBuilder(
+                        "ffmpeg",
+                        "-i", videoFile.getAbsolutePath(),
+                        "-ss", "00:00:01.000",
+                        "-vframes", "1",
+                        "-vf", "scale=" + size + ":" + size + ":force_original_aspect_ratio=decrease",
+                        "-y",
+                        thumbnailPath.toString()
+                );
+
+                processBuilder.redirectErrorStream(true);
+                Process process = processBuilder.start();
+
+                int exitCode = process.waitFor();
+                if (exitCode == 0) {
+                    thumbnailPaths.put(size, thumbnailPath.toString());
+                    logger.debug("Generated video thumbnail: {} for size: {}", thumbnailPath, size);
+                } else {
+                    logger.error("FFmpeg failed with exit code: {} for file: {}", exitCode, videoFile.getName());
+                }
+            } catch (IOException | InterruptedException e) {
+                logger.error("Failed to generate video thumbnail for size: {}", size, e);
+                // Continue with other sizes even if one fails
+            }
+        }
+
+        // Return the 300px thumbnail path as default
+        String defaultThumbnailPath = thumbnailPaths.get(300);
+        if (defaultThumbnailPath != null) {
+            return defaultThumbnailPath;
+        }
+
+        // If 300px failed, return any available thumbnail
+        return thumbnailPaths.values().stream().findFirst().orElseThrow(() ->
+                new IOException("Failed to generate any video thumbnails for: " + videoFile.getName())
+        );
     }
 
     public void deleteThumbnails(String fileHash) {

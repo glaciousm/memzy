@@ -19,12 +19,16 @@ import {
   Download,
   Info,
   Comment as CommentIcon,
+  Edit,
+  Share,
 } from '@mui/icons-material';
 import ReactPlayer from 'react-player';
 import { MediaFile, MediaType, Tag } from '@/types';
 import mediaService from '@/services/mediaService';
 import TagPicker from '@/components/tags/TagPicker';
 import CommentSection from '@/components/comments/CommentSection';
+import ImageEditor from '@/components/media/ImageEditor';
+import ShareDialog from '@/components/share/ShareDialog';
 import { format } from 'date-fns';
 
 interface MediaViewerProps {
@@ -50,6 +54,8 @@ const MediaViewer: React.FC<MediaViewerProps> = ({
 }) => {
   const [currentTags, setCurrentTags] = useState<Tag[]>([]);
   const [tabValue, setTabValue] = useState(0);
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
 
   useEffect(() => {
     if (media) {
@@ -57,6 +63,12 @@ const MediaViewer: React.FC<MediaViewerProps> = ({
       setTabValue(0);
     }
   }, [media]);
+
+  const handleEditComplete = (editedMedia: MediaFile) => {
+    // Notify parent about the edited media
+    // You can refresh the gallery or update the media list here
+    setEditorOpen(false);
+  };
 
   if (!media) return null;
 
@@ -190,6 +202,14 @@ const MediaViewer: React.FC<MediaViewerProps> = ({
               </Box>
 
               <Box>
+                {!isVideo && (
+                  <IconButton onClick={() => setEditorOpen(true)} sx={{ color: 'white' }}>
+                    <Edit />
+                  </IconButton>
+                )}
+                <IconButton onClick={() => setShareDialogOpen(true)} sx={{ color: 'white' }}>
+                  <Share />
+                </IconButton>
                 <IconButton
                   onClick={() => onFavoriteToggle && onFavoriteToggle(media.id)}
                   sx={{ color: 'white' }}
@@ -258,6 +278,20 @@ const MediaViewer: React.FC<MediaViewerProps> = ({
           </Box>
         </DialogContent>
       </Box>
+
+      <ImageEditor
+        open={editorOpen}
+        media={media}
+        onClose={() => setEditorOpen(false)}
+        onEditComplete={handleEditComplete}
+      />
+
+      <ShareDialog
+        open={shareDialogOpen}
+        onClose={() => setShareDialogOpen(false)}
+        mediaFileId={media.id}
+        title={media.fileName}
+      />
     </Dialog>
   );
 };
