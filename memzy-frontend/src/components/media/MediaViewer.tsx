@@ -38,6 +38,7 @@ interface MediaViewerProps {
   onPrevious?: () => void;
   onNext?: () => void;
   onFavoriteToggle?: (id: number) => void;
+  onMediaUpdate?: (media: MediaFile) => void;
   hasPrevious?: boolean;
   hasNext?: boolean;
 }
@@ -49,6 +50,7 @@ const MediaViewer: React.FC<MediaViewerProps> = ({
   onPrevious,
   onNext,
   onFavoriteToggle,
+  onMediaUpdate,
   hasPrevious = false,
   hasNext = false,
 }) => {
@@ -265,7 +267,12 @@ const MediaViewer: React.FC<MediaViewerProps> = ({
                 <TagPicker
                   mediaId={media.id}
                   selectedTags={currentTags}
-                  onTagsChange={setCurrentTags}
+                  onTagsChange={(newTags) => {
+                    setCurrentTags(newTags);
+                    if (onMediaUpdate && media) {
+                      onMediaUpdate({ ...media, tags: newTags });
+                    }
+                  }}
                 />
               </Box>
             )}

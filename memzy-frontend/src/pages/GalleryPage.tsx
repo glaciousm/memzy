@@ -135,6 +135,13 @@ const GalleryPage: React.FC = () => {
     }
   };
 
+  const handleMediaUpdate = (updatedMedia: MediaFile) => {
+    setMediaFiles((prev) =>
+      prev.map((m) => (m.id === updatedMedia.id ? updatedMedia : m))
+    );
+    setSelectedMedia(updatedMedia);
+  };
+
   return (
     <MainLayout>
       <Box>
@@ -231,6 +238,7 @@ const GalleryPage: React.FC = () => {
           onPrevious={handlePrevious}
           onNext={handleNext}
           onFavoriteToggle={handleFavoriteToggle}
+          onMediaUpdate={handleMediaUpdate}
           hasPrevious={selectedIndex > 0}
           hasNext={selectedIndex < mediaFiles.length - 1}
         />

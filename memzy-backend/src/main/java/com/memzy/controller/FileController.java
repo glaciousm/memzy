@@ -1,5 +1,6 @@
 package com.memzy.controller;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
@@ -14,13 +15,19 @@ import java.nio.file.Paths;
 @RequestMapping("/api/files")
 public class FileController {
 
+    @Value("${memzy.storage.original-path:./storage/original}")
+    private String originalPath;
+
+    @Value("${memzy.storage.thumbnail-path:./storage/thumbnails}")
+    private String thumbnailPath;
+
     @GetMapping("/thumbnails/{size}/{filename}")
     public ResponseEntity<Resource> getThumbnail(
             @PathVariable String size,
             @PathVariable String filename
     ) {
         try {
-            Path filePath = Paths.get("./storage/thumbnails", size, filename);
+            Path filePath = Paths.get(thumbnailPath, size, filename);
             Resource resource = new UrlResource(filePath.toUri());
 
             if (resource.exists() && resource.isReadable()) {
@@ -39,7 +46,7 @@ public class FileController {
     @GetMapping("/original/{filename}")
     public ResponseEntity<Resource> getOriginalFile(@PathVariable String filename) {
         try {
-            Path filePath = Paths.get("./storage/original", filename);
+            Path filePath = Paths.get(originalPath, filename);
             Resource resource = new UrlResource(filePath.toUri());
 
             if (resource.exists() && resource.isReadable()) {

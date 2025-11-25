@@ -16,7 +16,8 @@ import tagService from '@/services/tagService';
 interface CreateTagDialogProps {
   open: boolean;
   onClose: () => void;
-  onCreated: () => void;
+  onCreated: (tag?: any) => void;
+  mediaId?: number; // If provided, auto-link tag to this media
 }
 
 const PRESET_COLORS = [
@@ -40,7 +41,7 @@ const PRESET_COLORS = [
   '#607d8b', // blue grey
 ];
 
-const CreateTagDialog: React.FC<CreateTagDialogProps> = ({ open, onClose, onCreated }) => {
+const CreateTagDialog: React.FC<CreateTagDialogProps> = ({ open, onClose, onCreated, mediaId }) => {
   const { enqueueSnackbar } = useSnackbar();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -55,12 +56,20 @@ const CreateTagDialog: React.FC<CreateTagDialogProps> = ({ open, onClose, onCrea
 
     try {
       setLoading(true);
-      await tagService.createTag(name, colorCode, description);
-      enqueueSnackbar('Tag created successfully', { variant: 'success' });
+      const newTag = await tagService.createTag(name, colorCode, description);
+
+      // Auto-link to media if mediaId is provided
+      if (mediaId) {
+        await tagService.addTagToMedia(mediaId, newTag.id);
+        enqueueSnackbar('Tag created and added to media', { variant: 'success' });
+      } else {
+        enqueueSnackbar('Tag created successfully', { variant: 'success' });
+      }
+
       setName('');
       setDescription('');
       setColorCode('#2196f3');
-      onCreated();
+      onCreated(newTag);
       onClose();
     } catch (error: any) {
       enqueueSnackbar(error.message || 'Failed to create tag', { variant: 'error' });

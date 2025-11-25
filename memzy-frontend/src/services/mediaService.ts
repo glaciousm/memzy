@@ -84,18 +84,27 @@ class MediaService {
     return response.data;
   }
 
-  getThumbnailUrl(thumbnailPath: string, size: number = 300): string {
-    const filename = thumbnailPath.split('/').pop();
-    return `http://localhost:8080/api/files/thumbnails/${size}/${filename}`;
+  getThumbnailUrl(thumbnailPath: string, size: number = 600): string {
+    // Handle both forward and backward slashes (Windows vs Unix paths)
+    const filename = thumbnailPath.split(/[/\\]/).pop() || '';
+    // Replace the size suffix in the filename (e.g., hash_300.jpg -> hash_600.jpg)
+    const newFilename = filename.replace(/_\d+\./, `_${size}.`);
+    return `http://localhost:8080/api/files/thumbnails/${size}/${newFilename}`;
   }
 
   getOriginalUrl(filePath: string): string {
-    const filename = filePath.split('/').pop();
+    // Handle both forward and backward slashes (Windows vs Unix paths)
+    const filename = filePath.split(/[/\\]/).pop();
     return `http://localhost:8080/api/files/original/${filename}`;
   }
 
   async getStorageStats(): Promise<StorageStats> {
     const response = await apiService.get<StorageStats>('/media/stats');
+    return response.data;
+  }
+
+  async regenerateVideoThumbnails(): Promise<{ total: number; success: number; failed: number }> {
+    const response = await apiService.post<{ total: number; success: number; failed: number }>('/media/regenerate-video-thumbnails');
     return response.data;
   }
 }

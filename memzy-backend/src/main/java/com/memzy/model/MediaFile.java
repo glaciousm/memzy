@@ -67,21 +67,25 @@ public class MediaFile {
     @JoinColumn(name = "owner_id", nullable = false)
     private User owner;
 
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
         name = "media_tags",
         joinColumns = @JoinColumn(name = "media_id"),
         inverseJoinColumns = @JoinColumn(name = "tag_id")
     )
+    @Builder.Default
     private Set<Tag> tags = new HashSet<>();
 
-    @ManyToMany(mappedBy = "mediaFiles")
+    @ManyToMany(mappedBy = "mediaFiles", fetch = FetchType.EAGER)
+    @Builder.Default
     private Set<Album> albums = new HashSet<>();
 
     @OneToMany(mappedBy = "mediaFile", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private List<MediaMetadata> metadata = new ArrayList<>();
 
     @OneToMany(mappedBy = "mediaFile", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private List<Comment> comments = new ArrayList<>();
 
     @Column(name = "is_favorite")

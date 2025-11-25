@@ -35,9 +35,9 @@ const MediaGrid: React.FC<MediaGridProps> = ({
 }) => {
   const getThumbnailUrl = (media: MediaFile) => {
     if (media.thumbnailPath) {
-      return mediaService.getThumbnailUrl(media.thumbnailPath, 300);
+      return mediaService.getThumbnailUrl(media.thumbnailPath, 600);
     }
-    return 'https://via.placeholder.com/300?text=No+Thumbnail';
+    return 'https://via.placeholder.com/600?text=No+Thumbnail';
   };
 
   return (
@@ -98,6 +98,48 @@ const MediaGrid: React.FC<MediaGridProps> = ({
                     color: 'error.main',
                   }}
                 />
+              )}
+
+              {/* Tags displayed on thumbnail */}
+              {media.tags && media.tags.length > 0 && (
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    top: 8,
+                    left: 8,
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: 0.5,
+                    maxWidth: '70%',
+                  }}
+                >
+                  {media.tags.slice(0, 3).map((tag) => (
+                    <Chip
+                      key={tag.id}
+                      label={tag.name}
+                      size="small"
+                      sx={{
+                        height: 20,
+                        fontSize: '0.65rem',
+                        bgcolor: tag.colorCode || 'primary.main',
+                        color: 'white',
+                        '& .MuiChip-label': { px: 1 },
+                      }}
+                    />
+                  ))}
+                  {media.tags.length > 3 && (
+                    <Chip
+                      label={`+${media.tags.length - 3}`}
+                      size="small"
+                      sx={{
+                        height: 20,
+                        fontSize: '0.65rem',
+                        bgcolor: 'rgba(0,0,0,0.6)',
+                        color: 'white',
+                      }}
+                    />
+                  )}
+                </Box>
               )}
 
               <Box

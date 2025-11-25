@@ -49,4 +49,9 @@ public interface MediaFileRepository extends JpaRepository<MediaFile, Long> {
 
     @Query("SELECT SUM(m.fileSize) FROM MediaFile m WHERE m.owner = :owner AND m.isDeleted = false")
     Long sumFileSizeByOwnerAndIsDeletedFalse(@Param("owner") User owner);
+
+    List<MediaFile> findByOwnerAndMediaTypeAndThumbnailPathIsNullAndIsDeletedFalse(User owner, MediaFile.MediaType mediaType);
+
+    @Query("SELECT m FROM MediaFile m LEFT JOIN FETCH m.tags LEFT JOIN FETCH m.albums WHERE m.id = :id")
+    Optional<MediaFile> findByIdWithTagsAndAlbums(@Param("id") Long id);
 }

@@ -4,8 +4,10 @@ import com.memzy.dto.MediaFileDto;
 import com.memzy.dto.SimpleAlbumDto;
 import com.memzy.dto.TagDto;
 import com.memzy.model.MediaFile;
+import com.memzy.model.Tag;
 import com.memzy.model.User;
 import com.memzy.repository.MediaFileRepository;
+import com.memzy.repository.TagRepository;
 import com.memzy.repository.UserRepository;
 import org.apache.tika.Tika;
 import org.slf4j.Logger;
@@ -35,6 +37,9 @@ public class MediaFileService {
 
     private static final Logger logger = LoggerFactory.getLogger(MediaFileService.class);
 
+    @org.springframework.beans.factory.annotation.Value("${memzy.storage.original-path}")
+    private String originalPath;
+
     @Autowired
     private MediaFileRepository mediaFileRepository;
 
@@ -49,6 +54,9 @@ public class MediaFileService {
 
     @Autowired
     private FaceDetectionService faceDetectionService;
+
+    @Autowired
+    private TagRepository tagRepository;
 
     private final Tika tika = new Tika();
 
@@ -76,7 +84,7 @@ public class MediaFileService {
         String originalFileName = file.getOriginalFilename();
         String fileExtension = originalFileName.substring(originalFileName.lastIndexOf("."));
         String savedFileName = UUID.randomUUID().toString() + fileExtension;
-        Path originalFilePath = Paths.get("./storage/original", savedFileName);
+        Path originalFilePath = Paths.get(originalPath, savedFileName);
         Files.write(originalFilePath, file.getBytes());
 
         // Create MediaFile entity
@@ -133,17 +141,24 @@ public class MediaFileService {
         return convertToDto(mediaFile);
     }
 
+    @Transactional(readOnly = true)
     public Page<MediaFileDto> getUserMedia(Pageable pageable) {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         Page<MediaFile> mediaFiles = mediaFileRepository.findByOwnerAndIsDeletedFalse(user, pageable);
-        return mediaFiles.map(this::convertToDto);
+
+        // Fetch tags for each media using native query
+        return mediaFiles.map(mediaFile -> {
+            var tags = tagRepository.findTagsByMediaId(mediaFile.getId());
+            return convertToDtoWithTags(mediaFile, tags);
+        });
     }
 
+    @Transactional
     public MediaFileDto getMediaById(Long id) {
-        MediaFile mediaFile = mediaFileRepository.findById(id)
+        MediaFile mediaFile = mediaFileRepository.findByIdWithTagsAndAlbums(id)
                 .orElseThrow(() -> new RuntimeException("Media file not found"));
 
         // Increment view count
@@ -151,7 +166,11 @@ public class MediaFileService {
         mediaFile.setLastViewed(LocalDateTime.now());
         mediaFileRepository.save(mediaFile);
 
-        return convertToDto(mediaFile);
+        // Fetch tags using native query as workaround for JPA relationship loading issue
+        var tags = tagRepository.findTagsByMediaId(id);
+        logger.info("Fetched {} tags for media {} using native query", tags.size(), id);
+
+        return convertToDtoWithTags(mediaFile, tags);
     }
 
     @Transactional
@@ -180,7 +199,8 @@ public class MediaFileService {
         mediaFile.setIsFavorite(!mediaFile.getIsFavorite());
         mediaFile = mediaFileRepository.save(mediaFile);
 
-        return convertToDto(mediaFile);
+        var tags = tagRepository.findTagsByMediaId(id);
+        return convertToDtoWithTags(mediaFile, tags);
     }
 
     private String generateFileHash(byte[] fileBytes) {
@@ -233,6 +253,7 @@ public class MediaFileService {
         }
     }
 
+    @Transactional(readOnly = true)
     public Map<String, Object> getStorageStats() {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByUsername(username)
@@ -267,6 +288,49 @@ public class MediaFileService {
         return String.format("%.1f %sB", bytes / Math.pow(1024, exp), pre);
     }
 
+    /**
+     * Regenerate thumbnails for videos that are missing them.
+     * This is useful after adding JavaCV support for video thumbnail generation.
+     */
+    @Transactional
+    public Map<String, Object> regenerateMissingVideoThumbnails() {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // Find all videos without thumbnails
+        var videosWithoutThumbnails = mediaFileRepository.findByOwnerAndMediaTypeAndThumbnailPathIsNullAndIsDeletedFalse(
+                user, MediaFile.MediaType.VIDEO);
+
+        int successCount = 0;
+        int failCount = 0;
+
+        for (MediaFile video : videosWithoutThumbnails) {
+            try {
+                File videoFile = new File(video.getFilePath());
+                if (videoFile.exists()) {
+                    String thumbnailPath = thumbnailService.generateVideoThumbnail(videoFile, video.getFileHash());
+                    video.setThumbnailPath(thumbnailPath);
+                    mediaFileRepository.save(video);
+                    successCount++;
+                    logger.info("Generated thumbnail for video: {}", video.getFileName());
+                } else {
+                    logger.warn("Video file not found: {}", video.getFilePath());
+                    failCount++;
+                }
+            } catch (Exception e) {
+                logger.error("Failed to generate thumbnail for video: {}", video.getFileName(), e);
+                failCount++;
+            }
+        }
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("total", videosWithoutThumbnails.size());
+        result.put("success", successCount);
+        result.put("failed", failCount);
+        return result;
+    }
+
     public MediaFileDto convertToDto(MediaFile mediaFile) {
         return MediaFileDto.builder()
                 .id(mediaFile.getId())
@@ -290,6 +354,49 @@ public class MediaFileService {
                 .updatedAt(mediaFile.getUpdatedAt())
                 .viewCount(mediaFile.getViewCount())
                 .tags(mediaFile.getTags().stream()
+                        .map(tag -> TagDto.builder()
+                                .id(tag.getId())
+                                .name(tag.getName())
+                                .colorCode(tag.getColorCode())
+                                .description(tag.getDescription())
+                                .usageCount(tag.getUsageCount())
+                                .createdAt(tag.getCreatedAt())
+                                .build())
+                        .collect(Collectors.toList()))
+                .albums(mediaFile.getAlbums().stream()
+                        .map(album -> SimpleAlbumDto.builder()
+                                .id(album.getId())
+                                .name(album.getName())
+                                .coverImageUrl(album.getCoverImageUrl())
+                                .albumType(album.getAlbumType())
+                                .build())
+                        .collect(Collectors.toList()))
+                .build();
+    }
+
+    public MediaFileDto convertToDtoWithTags(MediaFile mediaFile, java.util.List<Tag> tags) {
+        return MediaFileDto.builder()
+                .id(mediaFile.getId())
+                .fileName(mediaFile.getFileName())
+                .filePath(mediaFile.getFilePath())
+                .fileSize(mediaFile.getFileSize())
+                .mimeType(mediaFile.getMimeType())
+                .mediaType(mediaFile.getMediaType())
+                .width(mediaFile.getWidth())
+                .height(mediaFile.getHeight())
+                .duration(mediaFile.getDuration())
+                .thumbnailPath(mediaFile.getThumbnailPath())
+                .dateTaken(mediaFile.getDateTaken())
+                .isFavorite(mediaFile.getIsFavorite())
+                .latitude(mediaFile.getLatitude())
+                .longitude(mediaFile.getLongitude())
+                .locationName(mediaFile.getLocationName())
+                .cameraMake(mediaFile.getCameraMake())
+                .cameraModel(mediaFile.getCameraModel())
+                .createdAt(mediaFile.getCreatedAt())
+                .updatedAt(mediaFile.getUpdatedAt())
+                .viewCount(mediaFile.getViewCount())
+                .tags(tags.stream()
                         .map(tag -> TagDto.builder()
                                 .id(tag.getId())
                                 .name(tag.getName())

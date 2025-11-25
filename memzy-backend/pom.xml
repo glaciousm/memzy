@@ -25,6 +25,7 @@
         <aws-sdk.version>2.20.0</aws-sdk.version>
         <google-api.version>2.2.0</google-api.version>
         <dropbox-sdk.version>5.4.5</dropbox-sdk.version>
+        <javacv.version>1.5.9</javacv.version>
     </properties>
 
     <dependencies>
@@ -104,6 +105,18 @@
             <groupId>org.apache.tika</groupId>
             <artifactId>tika-core</artifactId>
             <version>2.9.1</version>
+        </dependency>
+
+        <!-- JavaCV for video processing (bundles FFmpeg) -->
+        <dependency>
+            <groupId>org.bytedeco</groupId>
+            <artifactId>javacv</artifactId>
+            <version>${javacv.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.bytedeco</groupId>
+            <artifactId>ffmpeg-platform</artifactId>
+            <version>6.0-${javacv.version}</version>
         </dependency>
 
         <!-- AWS S3 SDK -->

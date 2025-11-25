@@ -87,4 +87,14 @@ public class MediaFileController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+
+    @PostMapping("/regenerate-video-thumbnails")
+    public ResponseEntity<?> regenerateVideoThumbnails() {
+        try {
+            var result = mediaFileService.regenerateMissingVideoThumbnails();
+            return ResponseEntity.ok(result);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
 }

@@ -12,6 +12,9 @@ import java.nio.file.Paths;
 @Configuration
 public class FileStorageConfig {
 
+    @Value("${memzy.storage.original-path}")
+    private String originalPath;
+
     @Value("${memzy.storage.thumbnail-path}")
     private String thumbnailPath;
 
@@ -21,16 +24,20 @@ public class FileStorageConfig {
     @PostConstruct
     public void init() {
         try {
+            Files.createDirectories(Paths.get(originalPath));
             Files.createDirectories(Paths.get(thumbnailPath));
             Files.createDirectories(Paths.get(tempPath));
-            Files.createDirectories(Paths.get("./storage/original"));
-            Files.createDirectories(Paths.get("./storage/thumbnails/150"));
-            Files.createDirectories(Paths.get("./storage/thumbnails/300"));
-            Files.createDirectories(Paths.get("./storage/thumbnails/600"));
-            Files.createDirectories(Paths.get("./storage/thumbnails/1200"));
+            Files.createDirectories(Paths.get(thumbnailPath, "150"));
+            Files.createDirectories(Paths.get(thumbnailPath, "300"));
+            Files.createDirectories(Paths.get(thumbnailPath, "600"));
+            Files.createDirectories(Paths.get(thumbnailPath, "1200"));
         } catch (IOException e) {
             throw new RuntimeException("Could not create storage directories!", e);
         }
+    }
+
+    public Path getOriginalPath() {
+        return Paths.get(originalPath);
     }
 
     public Path getThumbnailPath() {

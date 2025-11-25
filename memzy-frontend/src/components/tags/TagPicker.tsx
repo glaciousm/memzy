@@ -29,7 +29,10 @@ const TagPicker: React.FC<TagPickerProps> = ({ mediaId, selectedTags, onTagsChan
   const loadTags = async () => {
     try {
       setLoading(true);
-      const data = await tagService.searchTags(searchQuery);
+      // Use getUserTags for empty query, searchTags otherwise
+      const data = searchQuery
+        ? await tagService.searchTags(searchQuery)
+        : await tagService.getUserTags();
       setAllTags(data);
     } catch (error: any) {
       console.error('Failed to load tags:', error);
@@ -84,8 +87,13 @@ const TagPicker: React.FC<TagPickerProps> = ({ mediaId, selectedTags, onTagsChan
           options={availableTags}
           getOptionLabel={(option) => option.name}
           loading={loading}
+          value={null}
           inputValue={searchQuery}
-          onInputChange={(_, newValue) => setSearchQuery(newValue)}
+          onInputChange={(_, newValue, reason) => {
+            if (reason !== 'reset') {
+              setSearchQuery(newValue);
+            }
+          }}
           onChange={(_, newValue) => {
             if (newValue) {
               handleAddTag(newValue);
@@ -161,7 +169,13 @@ const TagPicker: React.FC<TagPickerProps> = ({ mediaId, selectedTags, onTagsChan
       <CreateTagDialog
         open={createDialogOpen}
         onClose={() => setCreateDialogOpen(false)}
-        onCreated={loadTags}
+        onCreated={(newTag) => {
+          loadTags();
+          if (newTag) {
+            onTagsChange([...selectedTags, newTag]);
+          }
+        }}
+        mediaId={mediaId}
       />
     </Box>
   );

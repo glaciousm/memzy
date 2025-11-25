@@ -28,6 +28,9 @@ public class FolderScanService {
 
     private static final Logger logger = LoggerFactory.getLogger(FolderScanService.class);
 
+    @org.springframework.beans.factory.annotation.Value("${memzy.storage.original-path}")
+    private String originalPath;
+
     @Autowired
     private WatchedFolderRepository watchedFolderRepository;
 
@@ -136,7 +139,7 @@ public class FolderScanService {
         String originalFileName = file.getName();
         String fileExtension = originalFileName.substring(originalFileName.lastIndexOf("."));
         String savedFileName = UUID.randomUUID().toString() + fileExtension;
-        Path destinationPath = Paths.get("./storage/original", savedFileName);
+        Path destinationPath = Paths.get(originalPath, savedFileName);
         Files.copy(file.toPath(), destinationPath);
 
         // Create MediaFile entity

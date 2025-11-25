@@ -56,6 +56,7 @@ public class TagService {
         return convertToDto(tag);
     }
 
+    @Transactional(readOnly = true)
     public List<TagDto> getUserTags() {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByUsername(username)
@@ -67,6 +68,7 @@ public class TagService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public TagDto getTagById(Long id) {
         Tag tag = tagRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Tag not found"));
@@ -102,6 +104,9 @@ public class TagService {
             throw new RuntimeException("Unauthorized to delete this tag");
         }
 
+        // Remove all media_tags entries for this tag using native query
+        tagRepository.deleteMediaTagsByTagId(id);
+
         tagRepository.delete(tag);
         logger.info("Tag deleted: {} by user: {}", tag.getName(), username);
     }
@@ -114,13 +119,17 @@ public class TagService {
         Tag tag = tagRepository.findById(tagId)
                 .orElseThrow(() -> new RuntimeException("Tag not found"));
 
+        logger.info("Adding tag {} (id={}) to media {} (id={})", tag.getName(), tagId, mediaFile.getFileName(), mediaId);
+        logger.info("Current tags on media before add: {}", mediaFile.getTags().size());
+
         mediaFile.getTags().add(tag);
-        tag.setUsageCount(tag.getUsageCount() + 1);
+        Long currentCount = tag.getUsageCount() != null ? tag.getUsageCount() : 0L;
+        tag.setUsageCount(currentCount + 1);
 
         mediaFileRepository.save(mediaFile);
         tagRepository.save(tag);
 
-        logger.info("Tag {} added to media {}", tag.getName(), mediaFile.getFileName());
+        logger.info("Tag {} added to media {}, new usage count: {}", tag.getName(), mediaFile.getFileName(), tag.getUsageCount());
     }
 
     @Transactional
@@ -140,8 +149,19 @@ public class TagService {
         logger.info("Tag {} removed from media {}", tag.getName(), mediaFile.getFileName());
     }
 
+    @Transactional(readOnly = true)
     public List<TagDto> searchTags(String query) {
         List<Tag> tags = tagRepository.findByNameContainingIgnoreCase(query);
+        return tags.stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<TagDto> getTagsForMedia(Long mediaId) {
+        // Use native query to fetch tags directly from join table
+        List<Tag> tags = tagRepository.findTagsByMediaId(mediaId);
+        logger.info("Found {} tags for media {}", tags.size(), mediaId);
         return tags.stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());

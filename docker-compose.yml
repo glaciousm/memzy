@@ -33,6 +33,16 @@ services:
       timeout: 5s
       retries: 5
 
+  adminer:
+    image: adminer:latest
+    container_name: memzy-adminer
+    ports:
+      - "8081:8080"
+    networks:
+      - memzy-network
+    depends_on:
+      - postgres
+
   # Backend service (uncomment when ready to dockerize)
   # backend:
   #   build:

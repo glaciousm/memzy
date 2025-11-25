@@ -228,19 +228,20 @@ const SettingsPage: React.FC = () => {
               Add folders to automatically import media files
             </Typography>
 
-            <Box sx={{ mb: 3, display: 'flex', gap: 2 }}>
+            <Box sx={{ mb: 3, display: 'flex', gap: 2, alignItems: 'flex-start' }}>
               <TextField
                 label="Folder Path"
                 fullWidth
                 value={newFolderPath}
                 onChange={(e) => setNewFolderPath(e.target.value)}
-                placeholder="/path/to/your/media"
+                placeholder="C:\Users\YourName\Pictures or /home/user/photos"
+                helperText="Enter the full path to your media folder"
               />
               <Button
                 variant="contained"
                 startIcon={<Add />}
                 onClick={handleAddFolder}
-                sx={{ minWidth: 120 }}
+                sx={{ minWidth: 120, height: 56 }}
               >
                 Add
               </Button>

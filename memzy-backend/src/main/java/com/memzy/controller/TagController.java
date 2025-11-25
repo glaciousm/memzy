@@ -80,6 +80,16 @@ public class TagController {
         }
     }
 
+    @GetMapping("/media/{mediaId}")
+    public ResponseEntity<List<TagDto>> getTagsForMedia(@PathVariable Long mediaId) {
+        try {
+            List<TagDto> tags = tagService.getTagsForMedia(mediaId);
+            return ResponseEntity.ok(tags);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+    }
+
     @PostMapping("/media/{mediaId}/tags/{tagId}")
     public ResponseEntity<Void> addTagToMedia(
             @PathVariable Long mediaId,

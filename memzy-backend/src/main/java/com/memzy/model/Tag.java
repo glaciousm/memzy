@@ -36,12 +36,14 @@ public class Tag {
     private User createdBy;
 
     @ManyToMany(mappedBy = "tags")
+    @Builder.Default
     private Set<MediaFile> mediaFiles = new HashSet<>();
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @Column(name = "usage_count")
+    @Builder.Default
     private Long usageCount = 0L;
 
     @PrePersist
