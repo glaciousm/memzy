@@ -46,6 +46,9 @@ public class MediaFileService {
     @Autowired
     private MetadataExtractionService metadataExtractionService;
 
+    @Autowired
+    private FaceDetectionService faceDetectionService;
+
     private final Tika tika = new Tika();
 
     @Transactional
@@ -120,6 +123,11 @@ public class MediaFileService {
 
         mediaFile = mediaFileRepository.save(mediaFile);
         logger.info("Media file uploaded: {} by user: {}", originalFileName, username);
+
+        // Trigger face detection for images (async)
+        if (mediaType == MediaFile.MediaType.IMAGE) {
+            faceDetectionService.detectFaces(mediaFile);
+        }
 
         return convertToDto(mediaFile);
     }
