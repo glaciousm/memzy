@@ -36,6 +36,17 @@ const cloudStorageService = {
     return response.data;
   },
 
+  // OneDrive
+  getOneDriveAuthUrl: async (): Promise<{ authUrl: string }> => {
+    const response = await api.get('/cloud/onedrive/auth-url');
+    return response.data;
+  },
+
+  handleOneDriveCallback: async (code: string): Promise<{ message: string; cloudStorage: CloudStorage }> => {
+    const response = await api.get(`/cloud/onedrive/callback?code=${code}`);
+    return response.data;
+  },
+
   // General
   getUserCloudStorages: async (): Promise<CloudStorage[]> => {
     const response = await api.get('/cloud');

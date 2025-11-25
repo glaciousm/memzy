@@ -73,6 +73,18 @@ const CloudStorageSettings: React.FC = () => {
     }
   };
 
+  const handleConnectOneDrive = async () => {
+    setConnecting(true);
+    try {
+      const { authUrl } = await cloudStorageService.getOneDriveAuthUrl();
+      // Open OAuth window
+      window.location.href = authUrl;
+    } catch (error: any) {
+      enqueueSnackbar(error.message || 'Failed to connect to OneDrive', { variant: 'error' });
+      setConnecting(false);
+    }
+  };
+
   const handleDisconnect = async (id: number) => {
     if (!window.confirm('Are you sure you want to disconnect this cloud storage?')) {
       return;
@@ -269,8 +281,13 @@ const CloudStorageSettings: React.FC = () => {
                   </Typography>
                 </Box>
               </Box>
-              <Button variant="outlined" disabled>
-                Coming Soon
+              <Button
+                variant={onedriveConnected ? 'outlined' : 'contained'}
+                onClick={handleConnectOneDrive}
+                disabled={connecting || onedriveConnected}
+                startIcon={connecting ? <CircularProgress size={20} /> : <CloudUpload />}
+              >
+                {onedriveConnected ? 'Connected' : 'Connect'}
               </Button>
             </Box>
           </Box>

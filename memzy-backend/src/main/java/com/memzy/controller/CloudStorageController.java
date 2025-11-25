@@ -7,6 +7,7 @@ import com.memzy.repository.CloudStorageRepository;
 import com.memzy.repository.UserRepository;
 import com.memzy.service.GoogleDriveService;
 import com.memzy.service.DropboxService;
+import com.memzy.service.OneDriveService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +30,9 @@ public class CloudStorageController {
 
     @Autowired
     private DropboxService dropboxService;
+
+    @Autowired
+    private OneDriveService oneDriveService;
 
     @Autowired
     private CloudStorageRepository cloudStorageRepository;
@@ -90,6 +94,33 @@ public class CloudStorageController {
         }
     }
 
+    @GetMapping("/onedrive/auth-url")
+    public ResponseEntity<?> getOneDriveAuthUrl() {
+        try {
+            String authUrl = oneDriveService.getAuthorizationUrl();
+            return ResponseEntity.ok(Map.of("authUrl", authUrl));
+        } catch (Exception e) {
+            logger.error("Failed to get OneDrive auth URL", e);
+            return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/onedrive/callback")
+    public ResponseEntity<?> handleOneDriveCallback(@RequestParam String code) {
+        try {
+            CloudStorage cloudStorage = oneDriveService.handleOAuthCallback(code);
+            CloudStorageDto dto = convertToDto(cloudStorage);
+
+            return ResponseEntity.ok(Map.of(
+                    "message", "Successfully connected to OneDrive",
+                    "cloudStorage", dto
+            ));
+        } catch (Exception e) {
+            logger.error("Failed to handle OneDrive callback", e);
+            return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
+        }
+    }
+
     @GetMapping
     public ResponseEntity<?> getUserCloudStorages() {
         try {
@@ -122,8 +153,9 @@ public class CloudStorageController {
                 googleDriveService.disconnect(id);
             } else if ("DROPBOX".equals(provider)) {
                 dropboxService.disconnect(id);
+            } else if ("ONEDRIVE".equals(provider)) {
+                oneDriveService.disconnect(id);
             }
-            // Add OneDrive here
 
             return ResponseEntity.ok(Map.of("message", "Successfully disconnected from " + provider));
         } catch (Exception e) {
