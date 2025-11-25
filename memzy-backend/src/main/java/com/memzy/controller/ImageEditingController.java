@@ -156,7 +156,7 @@ public class ImageEditingController {
                     .owner(user)
                     .isFavorite(false)
                     .isDeleted(false)
-                    .viewCount(0)
+                    .viewCount(0L)
                     .build();
 
             // Generate thumbnails

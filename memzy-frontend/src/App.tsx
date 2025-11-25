@@ -12,6 +12,8 @@ import DashboardPage from '@/pages/DashboardPage';
 import GalleryPage from '@/pages/GalleryPage';
 import AlbumsPage from '@/pages/AlbumsPage';
 import AlbumDetailPage from '@/pages/AlbumDetailPage';
+import TagsPage from '@/pages/TagsPage';
+import SearchPage from '@/pages/SearchPage';
 import SettingsPage from '@/pages/SettingsPage';
 
 // Create a client
@@ -101,6 +103,22 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <AlbumDetailPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/tags"
+                element={
+                  <ProtectedRoute>
+                    <TagsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/search"
+                element={
+                  <ProtectedRoute>
+                    <SearchPage />
                   </ProtectedRoute>
                 }
               />

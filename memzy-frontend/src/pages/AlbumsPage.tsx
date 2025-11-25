@@ -13,12 +13,14 @@ import {
   CircularProgress,
   Menu,
   MenuItem,
+  Chip,
 } from '@mui/material';
-import { Add, MoreVert, Edit, Delete, Folder } from '@mui/icons-material';
+import { Add, MoreVert, Edit, Delete, Folder, Image } from '@mui/icons-material';
 import { useSnackbar } from 'notistack';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import CreateAlbumDialog from '@/components/albums/CreateAlbumDialog';
+import EditAlbumDialog from '@/components/albums/EditAlbumDialog';
 import albumService from '@/services/albumService';
 import { Album } from '@/types';
 
@@ -28,6 +30,7 @@ const AlbumsPage: React.FC = () => {
   const [albums, setAlbums] = useState<Album[]>([]);
   const [loading, setLoading] = useState(true);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null);
 
@@ -55,6 +58,11 @@ const AlbumsPage: React.FC = () => {
   const handleMenuClose = () => {
     setAnchorEl(null);
     setSelectedAlbum(null);
+  };
+
+  const handleEditAlbum = () => {
+    setEditDialogOpen(true);
+    setAnchorEl(null);
   };
 
   const handleDeleteAlbum = async () => {
@@ -190,7 +198,7 @@ const AlbumsPage: React.FC = () => {
         />
 
         <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
-          <MenuItem onClick={handleMenuClose}>
+          <MenuItem onClick={handleEditAlbum}>
             <Edit fontSize="small" sx={{ mr: 1 }} />
             Edit
           </MenuItem>
@@ -199,6 +207,16 @@ const AlbumsPage: React.FC = () => {
             Delete
           </MenuItem>
         </Menu>
+
+        <EditAlbumDialog
+          open={editDialogOpen}
+          album={selectedAlbum}
+          onClose={() => {
+            setEditDialogOpen(false);
+            setSelectedAlbum(null);
+          }}
+          onUpdated={loadAlbums}
+        />
       </Box>
     </MainLayout>
   );

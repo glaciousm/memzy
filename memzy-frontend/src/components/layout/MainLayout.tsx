@@ -22,6 +22,8 @@ import {
   Dashboard,
   PhotoLibrary,
   Collections,
+  LocalOffer,
+  Search,
   Settings,
   AccountCircle,
   Logout,
@@ -70,6 +72,8 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     { text: 'Dashboard', icon: <Dashboard />, path: '/dashboard' },
     { text: 'Gallery', icon: <PhotoLibrary />, path: '/gallery' },
     { text: 'Albums', icon: <Collections />, path: '/albums' },
+    { text: 'Tags', icon: <LocalOffer />, path: '/tags' },
+    { text: 'Search', icon: <Search />, path: '/search' },
     { text: 'Settings', icon: <Settings />, path: '/settings' },
   ];
 

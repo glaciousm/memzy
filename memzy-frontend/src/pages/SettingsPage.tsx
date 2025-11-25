@@ -16,14 +16,30 @@ import {
   ListItemSecondaryAction,
   IconButton,
   CircularProgress,
+  Grid,
+  Card,
+  CardContent,
+  LinearProgress,
 } from '@mui/material';
-import { Delete, Add, FolderOpen, PlayArrow } from '@mui/icons-material';
+import {
+  Delete,
+  Add,
+  FolderOpen,
+  PlayArrow,
+  Photo,
+  Videocam,
+  Favorite,
+  DeleteOutline,
+  Storage,
+} from '@mui/icons-material';
 import { useSnackbar } from 'notistack';
 import MainLayout from '@/components/layout/MainLayout';
 import { useAppSelector } from '@/hooks/useRedux';
 import { useThemeMode } from '@/theme/ThemeContext';
 import watchedFolderService from '@/services/watchedFolderService';
 import userService from '@/services/userService';
+import mediaService, { StorageStats } from '@/services/mediaService';
+import CloudStorageSettings from '@/components/cloud/CloudStorageSettings';
 import { WatchedFolder } from '@/types';
 import { useAppDispatch } from '@/hooks/useRedux';
 import { setUser } from '@/store/authSlice';
@@ -59,6 +75,20 @@ const SettingsPage: React.FC = () => {
   const [newFolderPath, setNewFolderPath] = useState('');
   const [loadingFolders, setLoadingFolders] = useState(false);
   const [scanningFolder, setScanningFolder] = useState<number | null>(null);
+  const [storageStats, setStorageStats] = useState<StorageStats | null>(null);
+  const [loadingStats, setLoadingStats] = useState(false);
+
+  const loadStorageStats = async () => {
+    try {
+      setLoadingStats(true);
+      const stats = await mediaService.getStorageStats();
+      setStorageStats(stats);
+    } catch (error: any) {
+      enqueueSnackbar(error.message || 'Failed to load storage stats', { variant: 'error' });
+    } finally {
+      setLoadingStats(false);
+    }
+  };
 
   const loadWatchedFolders = async () => {
     try {
@@ -75,6 +105,8 @@ const SettingsPage: React.FC = () => {
   useEffect(() => {
     if (tabValue === 1) {
       loadWatchedFolders();
+    } else if (tabValue === 3) {
+      loadStorageStats();
     }
   }, [tabValue]);
 
@@ -152,6 +184,7 @@ const SettingsPage: React.FC = () => {
             <Tab label="Watched Folders" />
             <Tab label="Appearance" />
             <Tab label="Storage" />
+            <Tab label="Cloud Storage" />
           </Tabs>
 
           <TabPanel value={tabValue} index={0}>
@@ -276,20 +309,82 @@ const SettingsPage: React.FC = () => {
               Storage & Performance
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              Manage storage and caching options
+              View your storage usage and manage performance settings
             </Typography>
 
-            <Paper sx={{ p: 3, bgcolor: 'background.default', mb: 2 }}>
-              <Typography variant="body1" gutterBottom>
-                Storage Usage
-              </Typography>
-              <Typography variant="h4" color="primary">
-                0 GB
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                of unlimited storage used
-              </Typography>
-            </Paper>
+            {loadingStats ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                <CircularProgress />
+              </Box>
+            ) : storageStats ? (
+              <>
+                {/* Storage Overview */}
+                <Paper sx={{ p: 3, bgcolor: 'background.default', mb: 3 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                    <Storage color="primary" fontSize="large" />
+                    <Box>
+                      <Typography variant="body2" color="text.secondary">
+                        Total Storage Used
+                      </Typography>
+                      <Typography variant="h4" color="primary">
+                        {storageStats.totalSizeFormatted}
+                      </Typography>
+                    </Box>
+                  </Box>
+                  <Typography variant="body2" color="text.secondary">
+                    {storageStats.totalFiles} files total
+                  </Typography>
+                </Paper>
+
+                {/* Stats Grid */}
+                <Grid container spacing={2} sx={{ mb: 3 }}>
+                  <Grid item xs={6} sm={3}>
+                    <Card>
+                      <CardContent sx={{ textAlign: 'center' }}>
+                        <Photo color="primary" sx={{ fontSize: 40, mb: 1 }} />
+                        <Typography variant="h5">{storageStats.imageCount}</Typography>
+                        <Typography variant="body2" color="text.secondary">Images</Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  <Grid item xs={6} sm={3}>
+                    <Card>
+                      <CardContent sx={{ textAlign: 'center' }}>
+                        <Videocam color="secondary" sx={{ fontSize: 40, mb: 1 }} />
+                        <Typography variant="h5">{storageStats.videoCount}</Typography>
+                        <Typography variant="body2" color="text.secondary">Videos</Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  <Grid item xs={6} sm={3}>
+                    <Card>
+                      <CardContent sx={{ textAlign: 'center' }}>
+                        <Favorite color="error" sx={{ fontSize: 40, mb: 1 }} />
+                        <Typography variant="h5">{storageStats.favoriteCount}</Typography>
+                        <Typography variant="body2" color="text.secondary">Favorites</Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  <Grid item xs={6} sm={3}>
+                    <Card>
+                      <CardContent sx={{ textAlign: 'center' }}>
+                        <DeleteOutline color="action" sx={{ fontSize: 40, mb: 1 }} />
+                        <Typography variant="h5">{storageStats.trashedCount}</Typography>
+                        <Typography variant="body2" color="text.secondary">In Trash</Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                </Grid>
+              </>
+            ) : (
+              <Typography color="text.secondary">Unable to load storage statistics</Typography>
+            )}
+
+            <Divider sx={{ my: 3 }} />
+
+            <Typography variant="subtitle1" gutterBottom fontWeight={500}>
+              Performance Settings
+            </Typography>
 
             <FormControlLabel
               control={<Switch defaultChecked />}
@@ -306,6 +401,10 @@ const SettingsPage: React.FC = () => {
             <Typography variant="body2" color="text.secondary" sx={{ ml: 5 }}>
               Extract EXIF data from images (camera, location, date)
             </Typography>
+          </TabPanel>
+
+          <TabPanel value={tabValue} index={4}>
+            <CloudStorageSettings />
           </TabPanel>
         </Paper>
       </Box>

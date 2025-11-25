@@ -118,4 +118,27 @@ public class AlbumController {
             return ResponseEntity.notFound().build();
         }
     }
+
+    @PutMapping("/{albumId}/cover/{mediaId}")
+    public ResponseEntity<AlbumDto> setAlbumCover(
+            @PathVariable Long albumId,
+            @PathVariable Long mediaId
+    ) {
+        try {
+            AlbumDto album = albumService.setAlbumCover(albumId, mediaId);
+            return ResponseEntity.ok(album);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+    }
+
+    @DeleteMapping("/{albumId}/cover")
+    public ResponseEntity<AlbumDto> removeAlbumCover(@PathVariable Long albumId) {
+        try {
+            AlbumDto album = albumService.removeAlbumCover(albumId);
+            return ResponseEntity.ok(album);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+    }
 }

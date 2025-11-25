@@ -49,6 +49,16 @@ class AlbumService {
     const response = await apiService.delete<Album>(`/albums/${albumId}/media/${mediaId}`);
     return response.data;
   }
+
+  async setAlbumCover(albumId: number, mediaId: number): Promise<Album> {
+    const response = await apiService.put<Album>(`/albums/${albumId}/cover/${mediaId}`);
+    return response.data;
+  }
+
+  async removeAlbumCover(albumId: number): Promise<Album> {
+    const response = await apiService.delete<Album>(`/albums/${albumId}/cover`);
+    return response.data;
+  }
 }
 
 export const albumService = new AlbumService();

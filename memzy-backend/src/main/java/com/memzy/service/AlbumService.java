@@ -150,6 +150,47 @@ public class AlbumService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional
+    public AlbumDto setAlbumCover(Long albumId, Long mediaId) {
+        Album album = albumRepository.findById(albumId)
+                .orElseThrow(() -> new RuntimeException("Album not found"));
+
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        if (!album.getOwner().getUsername().equals(username)) {
+            throw new RuntimeException("Unauthorized to update this album");
+        }
+
+        MediaFile mediaFile = mediaFileRepository.findById(mediaId)
+                .orElseThrow(() -> new RuntimeException("Media file not found"));
+
+        // Build the thumbnail URL for the cover image
+        String coverUrl = "/api/files/thumbnails/" + mediaFile.getId() + "/medium";
+        album.setCoverImageUrl(coverUrl);
+        album = albumRepository.save(album);
+
+        logger.info("Album cover set: {} - {}", album.getName(), mediaFile.getFileName());
+
+        return convertToDto(album);
+    }
+
+    @Transactional
+    public AlbumDto removeAlbumCover(Long albumId) {
+        Album album = albumRepository.findById(albumId)
+                .orElseThrow(() -> new RuntimeException("Album not found"));
+
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        if (!album.getOwner().getUsername().equals(username)) {
+            throw new RuntimeException("Unauthorized to update this album");
+        }
+
+        album.setCoverImageUrl(null);
+        album = albumRepository.save(album);
+
+        logger.info("Album cover removed: {}", album.getName());
+
+        return convertToDto(album);
+    }
+
     private AlbumDto convertToDto(Album album) {
         return AlbumDto.builder()
                 .id(album.getId())

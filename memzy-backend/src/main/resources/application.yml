@@ -3,7 +3,7 @@ spring:
     name: memzy-backend
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/memzy_db
+    url: jdbc:postgresql://127.0.0.1:5434/memzy_db
     username: memzy_user
     password: memzy_password
     driver-class-name: org.postgresql.Driver
@@ -56,7 +56,8 @@ memzy:
       client-secret: ${GOOGLE_CLIENT_SECRET:}
     dropbox:
       enabled: false
-      access-token: ${DROPBOX_ACCESS_TOKEN:}
+      client-id: ${DROPBOX_CLIENT_ID:}
+      client-secret: ${DROPBOX_CLIENT_SECRET:}
     onedrive:
       enabled: false
       client-id: ${ONEDRIVE_CLIENT_ID:}

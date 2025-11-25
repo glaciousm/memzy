@@ -77,4 +77,14 @@ public class MediaFileController {
             return ResponseEntity.notFound().build();
         }
     }
+
+    @GetMapping("/stats")
+    public ResponseEntity<?> getStorageStats() {
+        try {
+            var stats = mediaFileService.getStorageStats();
+            return ResponseEntity.ok(stats);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
 }

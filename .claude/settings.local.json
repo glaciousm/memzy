@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mvn spring-boot:run:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npm install)",
+      "Bash(docker-compose up:*)",
+      "Bash(psql:*)",
+      "Bash(docker exec memzy-postgres psql -U memzy_user -d memzy_db -c \"SELECT 1\")",
+      "Bash(mvn clean spring-boot:run:*)",
+      "Bash(cat:*)",
+      "Bash(docker ps:*)",
+      "Bash(findstr:*)",
+      "Bash(powershell -Command \"Get-NetTCPConnection -LocalPort 5433 | Select-Object LocalAddress,LocalPort,OwningProcess\")",
+      "Bash(powershell -Command \"Get-Process -Id 14908 | Select-Object Name,Path\")",
+      "Bash(curl:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

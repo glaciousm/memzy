@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -12,42 +12,41 @@ import {
 } from '@mui/material';
 import { useSnackbar } from 'notistack';
 import tagService from '@/services/tagService';
+import { Tag } from '@/types';
 
-interface CreateTagDialogProps {
+interface EditTagDialogProps {
   open: boolean;
+  tag: Tag | null;
   onClose: () => void;
-  onCreated: () => void;
+  onUpdated: () => void;
 }
 
 const PRESET_COLORS = [
-  '#f44336', // red
-  '#e91e63', // pink
-  '#9c27b0', // purple
-  '#673ab7', // deep purple
-  '#3f51b5', // indigo
-  '#2196f3', // blue
-  '#03a9f4', // light blue
-  '#00bcd4', // cyan
-  '#009688', // teal
-  '#4caf50', // green
-  '#8bc34a', // light green
-  '#cddc39', // lime
-  '#ffeb3b', // yellow
-  '#ffc107', // amber
-  '#ff9800', // orange
-  '#ff5722', // deep orange
-  '#795548', // brown
-  '#607d8b', // blue grey
+  '#f44336', '#e91e63', '#9c27b0', '#673ab7',
+  '#3f51b5', '#2196f3', '#03a9f4', '#00bcd4',
+  '#009688', '#4caf50', '#8bc34a', '#cddc39',
+  '#ffeb3b', '#ffc107', '#ff9800', '#ff5722',
+  '#795548', '#607d8b',
 ];
 
-const CreateTagDialog: React.FC<CreateTagDialogProps> = ({ open, onClose, onCreated }) => {
+const EditTagDialog: React.FC<EditTagDialogProps> = ({ open, tag, onClose, onUpdated }) => {
   const { enqueueSnackbar } = useSnackbar();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [colorCode, setColorCode] = useState('#2196f3');
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    if (tag) {
+      setName(tag.name);
+      setDescription(tag.description || '');
+      setColorCode(tag.colorCode || '#2196f3');
+    }
+  }, [tag]);
+
   const handleSubmit = async () => {
+    if (!tag) return;
+
     if (!name.trim()) {
       enqueueSnackbar('Tag name is required', { variant: 'error' });
       return;
@@ -55,23 +54,27 @@ const CreateTagDialog: React.FC<CreateTagDialogProps> = ({ open, onClose, onCrea
 
     try {
       setLoading(true);
-      await tagService.createTag(name, colorCode, description);
-      enqueueSnackbar('Tag created successfully', { variant: 'success' });
-      setName('');
-      setDescription('');
-      setColorCode('#2196f3');
-      onCreated();
+      await tagService.updateTag(tag.id, name, colorCode, description);
+      enqueueSnackbar('Tag updated successfully', { variant: 'success' });
+      onUpdated();
       onClose();
     } catch (error: any) {
-      enqueueSnackbar(error.message || 'Failed to create tag', { variant: 'error' });
+      enqueueSnackbar(error.message || 'Failed to update tag', { variant: 'error' });
     } finally {
       setLoading(false);
     }
   };
 
+  const handleClose = () => {
+    setName('');
+    setDescription('');
+    setColorCode('#2196f3');
+    onClose();
+  };
+
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>Create New Tag</DialogTitle>
+    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
+      <DialogTitle>Edit Tag</DialogTitle>
       <DialogContent>
         <Box sx={{ pt: 2 }}>
           <TextField
@@ -149,15 +152,15 @@ const CreateTagDialog: React.FC<CreateTagDialogProps> = ({ open, onClose, onCrea
         </Box>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose} disabled={loading}>
+        <Button onClick={handleClose} disabled={loading}>
           Cancel
         </Button>
         <Button onClick={handleSubmit} variant="contained" disabled={loading}>
-          {loading ? 'Creating...' : 'Create'}
+          {loading ? 'Saving...' : 'Save Changes'}
         </Button>
       </DialogActions>
     </Dialog>
   );
 };
 
-export default CreateTagDialog;
+export default EditTagDialog;

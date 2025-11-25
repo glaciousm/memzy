@@ -18,6 +18,8 @@ public interface MediaFileRepository extends JpaRepository<MediaFile, Long> {
 
     Page<MediaFile> findByOwnerAndIsDeletedFalse(User owner, Pageable pageable);
 
+    List<MediaFile> findByOwnerAndIsDeletedFalse(User owner);
+
     Page<MediaFile> findByOwnerAndMediaTypeAndIsDeletedFalse(User owner, MediaFile.MediaType mediaType, Pageable pageable);
 
     Optional<MediaFile> findByFileHash(String fileHash);
@@ -36,6 +38,15 @@ public interface MediaFileRepository extends JpaRepository<MediaFile, Long> {
 
     Long countByOwnerAndIsDeletedFalse(User owner);
 
+    Long countByOwnerAndMediaTypeAndIsDeletedFalse(User owner, MediaFile.MediaType mediaType);
+
+    Long countByOwnerAndIsFavoriteTrueAndIsDeletedFalse(User owner);
+
+    Long countByOwnerAndIsDeletedTrue(User owner);
+
     @Query("SELECT SUM(m.fileSize) FROM MediaFile m WHERE m.owner = :owner AND m.isDeleted = false")
     Long getTotalStorageSizeByOwner(@Param("owner") User owner);
+
+    @Query("SELECT SUM(m.fileSize) FROM MediaFile m WHERE m.owner = :owner AND m.isDeleted = false")
+    Long sumFileSizeByOwnerAndIsDeletedFalse(@Param("owner") User owner);
 }

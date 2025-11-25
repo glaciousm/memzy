@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -230,6 +231,40 @@ public class MediaFileService {
         if (metadata.containsKey("cameraModel")) {
             mediaFile.setCameraModel((String) metadata.get("cameraModel"));
         }
+    }
+
+    public Map<String, Object> getStorageStats() {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // Get total counts and sizes
+        long totalFiles = mediaFileRepository.countByOwnerAndIsDeletedFalse(user);
+        Long totalSize = mediaFileRepository.sumFileSizeByOwnerAndIsDeletedFalse(user);
+        if (totalSize == null) totalSize = 0L;
+
+        long imageCount = mediaFileRepository.countByOwnerAndMediaTypeAndIsDeletedFalse(user, MediaFile.MediaType.IMAGE);
+        long videoCount = mediaFileRepository.countByOwnerAndMediaTypeAndIsDeletedFalse(user, MediaFile.MediaType.VIDEO);
+        long favoriteCount = mediaFileRepository.countByOwnerAndIsFavoriteTrueAndIsDeletedFalse(user);
+        long trashedCount = mediaFileRepository.countByOwnerAndIsDeletedTrue(user);
+
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("totalFiles", totalFiles);
+        stats.put("totalSizeBytes", totalSize);
+        stats.put("totalSizeFormatted", formatBytes(totalSize));
+        stats.put("imageCount", imageCount);
+        stats.put("videoCount", videoCount);
+        stats.put("favoriteCount", favoriteCount);
+        stats.put("trashedCount", trashedCount);
+
+        return stats;
+    }
+
+    private String formatBytes(long bytes) {
+        if (bytes < 1024) return bytes + " B";
+        int exp = (int) (Math.log(bytes) / Math.log(1024));
+        String pre = "KMGTPE".charAt(exp - 1) + "";
+        return String.format("%.1f %sB", bytes / Math.pow(1024, exp), pre);
     }
 
     public MediaFileDto convertToDto(MediaFile mediaFile) {

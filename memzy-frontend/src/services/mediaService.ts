@@ -93,6 +93,21 @@ class MediaService {
     const filename = filePath.split('/').pop();
     return `http://localhost:8080/api/files/original/${filename}`;
   }
+
+  async getStorageStats(): Promise<StorageStats> {
+    const response = await apiService.get<StorageStats>('/media/stats');
+    return response.data;
+  }
+}
+
+export interface StorageStats {
+  totalFiles: number;
+  totalSizeBytes: number;
+  totalSizeFormatted: string;
+  imageCount: number;
+  videoCount: number;
+  favoriteCount: number;
+  trashedCount: number;
 }
 
 export const mediaService = new MediaService();
